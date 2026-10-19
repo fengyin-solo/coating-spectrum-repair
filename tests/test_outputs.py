@@ -1,4 +1,4 @@
-"""验收：镀膜车间的 s/p 光谱单与跨班次缓存。"""
+"""镀膜车间的 s/p 光谱单与跨班次缓存。"""
 
 import copy
 import hashlib
@@ -223,11 +223,11 @@ def _bad_designs():
     empty_layers_list["layers"] = {}
     cases.append((empty_layers_list, "LAYER-TYPE"))
 
-    return cases
+    return [(design, label, index) for index, (design, label) in enumerate(cases, 1)]
 
 
 def test_normal_incidence_bare_substrate_reflectance_matches_fresnel(tmp_path):
-    """题面：「膜层各向同性、没有吸收，所以每个点的反射率和透射率加起来是一」：正入射裸基底是原有能力。"""
+    """正入射裸基底的反射率应回到 Fresnel 结果。"""
     design = _design(substrate_n=1.52)
     finished, spectrum_path, _ = _run(tmp_path, design, "normal-bare")
     item = _point(_report(spectrum_path), 550.0, 0.0)
@@ -238,7 +238,7 @@ def test_normal_incidence_bare_substrate_reflectance_matches_fresnel(tmp_path):
 
 
 def test_oblique_bare_substrate_matches_fresnel_for_both_polarizations(tmp_path):
-    """题面：「s 偏振和 p 偏振要分开算」：六十度裸基底的两种偏振都要对上 Fresnel。"""
+    """六十度裸基底的 s/p 反射率应分别对上 Fresnel 结果。"""
     design = _design(substrate_n=1.52, angles_deg=[60.0])
     finished, spectrum_path, _ = _run(tmp_path, design, "oblique-bare")
     item = _point(_report(spectrum_path), 550.0, 60.0)
@@ -252,7 +252,7 @@ def test_oblique_bare_substrate_matches_fresnel_for_both_polarizations(tmp_path)
 
 
 def test_oblique_single_layer_matches_independent_airy_sum(tmp_path):
-    """题面：「斜入射时膜层里的相位厚度跟着折射角走，不能拿入射角代替」。"""
+    """斜入射时膜层里的相位厚度跟着折射角走，不能拿入射角代替。"""
     design = _design(
         substrate_n=1.52,
         layers=[{"n": 2.1, "thickness_nm": 95.0}],
@@ -269,7 +269,7 @@ def test_oblique_single_layer_matches_independent_airy_sum(tmp_path):
 
 
 def test_quarter_wave_single_layer_at_normal_incidence(tmp_path):
-    """题面：「分光计会在正入射、斜入射、单层、多层和两种偏振上分别核对」：单层正入射是原有能力。"""
+    """正入射单层样品的反射率应与原有解析结果一致。"""
     wavelength = 550.0
     design = _design(
         substrate_n=1.5,
@@ -285,7 +285,7 @@ def test_quarter_wave_single_layer_at_normal_incidence(tmp_path):
 
 
 def test_quarter_wave_stack_matches_equivalent_admittance(tmp_path):
-    """题面：「叠了多层以后，数值和分光计对不上」：四周期中心波长的解析反射率。"""
+    """四周期四分之一波长堆在中心波长处应等于等效导纳的解析反射率。"""
     wavelength = 550.0
     periods = 4
     design = _design(
@@ -303,7 +303,7 @@ def test_quarter_wave_stack_matches_equivalent_admittance(tmp_path):
 
 
 def test_brewster_angle_suppresses_p_reflection(tmp_path):
-    """题面：「s 偏振和 p 偏振要分开算」：裸基底的 Brewster 角上 p 偏振反射趋零。"""
+    """裸基底在 Brewster 角上 p 偏振反射应趋近于零。"""
     substrate = 1.52
     angle = math.degrees(math.atan(substrate / 1.0))
     design = _design(substrate_n=substrate, angles_deg=[angle])
@@ -315,7 +315,7 @@ def test_brewster_angle_suppresses_p_reflection(tmp_path):
 
 
 def test_s_and_p_polarizations_differ_at_oblique_single_layer(tmp_path):
-    """题面：「s 偏振和 p 偏振要分开算」：同一个斜入射点不能把两种偏振算成同一个数。"""
+    """同一个斜入射点不能把 s/p 两种偏振算成同一个数。"""
     design = _design(
         substrate_n=1.52,
         layers=[{"n": 2.1, "thickness_nm": 95.0}],
@@ -329,7 +329,7 @@ def test_s_and_p_polarizations_differ_at_oblique_single_layer(tmp_path):
 
 
 def test_lossless_energy_conservation_for_every_point(tmp_path):
-    """题面：「膜层各向同性、没有吸收，所以每个点的反射率和透射率加起来是一」。"""
+    """膜层各向同性、没有吸收，所以每个点的反射率和透射率加起来是一。"""
     design = _design(
         substrate_n=1.52,
         layers=[
@@ -352,7 +352,7 @@ def test_lossless_energy_conservation_for_every_point(tmp_path):
 
 
 def test_tilted_multilayer_p_polarization_matches_independent_stack_sum(tmp_path):
-    """题面：「斜着测、偏振分开看、叠了多层以后，数值和分光计对不上」：三项一起核对。"""
+    """倾斜多层膜的 p 偏振反射率应独立复算一致。"""
     design = _design(
         substrate_n=1.52,
         layers=[
@@ -372,7 +372,7 @@ def test_tilted_multilayer_p_polarization_matches_independent_stack_sum(tmp_path
 
 
 def test_output_schema_and_point_order(tmp_path):
-    """题面：「`points` 先按 `wavelengths_nm` 的顺序、再按 `angles_deg` 的顺序展开」。"""
+    """`points` 先按 `wavelengths_nm` 的顺序、再按 `angles_deg` 的顺序展开。"""
     design = _design(wavelengths_nm=[450.0, 550.0], angles_deg=[0.0, 45.0])
     finished, spectrum_path, _ = _run(tmp_path, design, "schema")
     report = _report(spectrum_path)
@@ -392,7 +392,7 @@ def test_output_schema_and_point_order(tmp_path):
 
 
 def test_output_is_compact_json_with_one_trailing_newline(tmp_path):
-    """题面：「光谱单是 UTF-8 紧凑 JSON，分隔符后不留空格，末尾一个换行」。"""
+    """光谱单是 UTF-8 紧凑 JSON，分隔符后不留空格，末尾一个换行。"""
     finished, spectrum_path, _ = _run(tmp_path, _design(), "compact")
     raw = spectrum_path.read_bytes()
     assert finished.returncode == 0
@@ -403,7 +403,7 @@ def test_output_is_compact_json_with_one_trailing_newline(tmp_path):
 
 
 def test_summary_extrema_match_reported_points(tmp_path):
-    """题面：「`summary` 四个键依次是 `min_R_s`、`max_R_s`、`min_R_p`、`max_R_p`」。"""
+    """`summary` 四个键依次是 `min_R_s`、`max_R_s`、`min_R_p`、`max_R_p`。"""
     design = _design(
         substrate_n=1.52,
         layers=[{"n": 2.1, "thickness_nm": 95.0}],
@@ -420,7 +420,7 @@ def test_summary_extrema_match_reported_points(tmp_path):
 
 
 def test_cache_first_run_misses_and_second_run_hits_without_appending(tmp_path):
-    """题面：「第二次应该直接认出来：`cache` 写 `"hit"`」。"""
+    """第二次应该直接认出来：`cache` 写 `"hit"`。"""
     design = _design()
     first, spectrum_path, cache_path = _run(tmp_path, design, "cache-once")
     first_points = _report(spectrum_path)["points"]
@@ -435,9 +435,9 @@ def test_cache_first_run_misses_and_second_run_hits_without_appending(tmp_path):
 
 
 def test_changed_thickness_with_same_design_id_is_a_cache_miss(tmp_path):
-    """题面：「设计里任何一个字段变了，`key` 都要跟着变」。"""
-    original = _design(design_id="SAME-ID", layers=[{"n": 2.1, "thickness_nm": 95.0}])
-    changed = _design(design_id="SAME-ID", layers=[{"n": 2.1, "thickness_nm": 130.0}])
+    """设计里任何一个字段变了，`key` 都要跟着变。"""
+    original = _design(design_id="FL-552-07", layers=[{"n": 2.1, "thickness_nm": 95.0}])
+    changed = _design(design_id="FL-552-07", layers=[{"n": 2.1, "thickness_nm": 130.0}])
     first, spectrum_path, cache_path = _run(tmp_path, original, "cache-change")
     first_points = _report(spectrum_path)["points"]
     second, spectrum_path, cache_path = _run(tmp_path, changed, "cache-change")
@@ -449,13 +449,13 @@ def test_changed_thickness_with_same_design_id_is_a_cache_miss(tmp_path):
 
 
 def test_corrupt_cache_line_is_rejected_without_touching_outputs(tmp_path):
-    """题面：「同一个 `key` 出现两次、某一行不是 JSON 对象、键集合不对，或者 `points` 与本次设计的波长/角度网格对不上，都按缓存损坏处理」。"""
+    """同一个 `key` 出现两次、某一行不是 JSON 对象、键集合不对，或者 `points` 与本次设计的波长/角度网格对不上，都按缓存损坏处理。"""
     design = _design()
-    first, spectrum_path, cache_path = _run(tmp_path, design, "cache-bad")
+    first, spectrum_path, cache_path = _run(tmp_path, design, "cache-check")
     spectrum_before = spectrum_path.read_bytes()
     cache_before = cache_path.read_bytes()
     cache_path.write_bytes(b"{not a json object}\n")
-    second, spectrum_path, cache_path = _run(tmp_path, design, "cache-bad")
+    second, spectrum_path, cache_path = _run(tmp_path, design, "cache-check")
     assert first.returncode == 0
     assert second.returncode == 2
     assert second.stderr.startswith("运行拒收: BAD_CACHE")
@@ -464,7 +464,7 @@ def test_corrupt_cache_line_is_rejected_without_touching_outputs(tmp_path):
 
 
 def test_duplicate_cache_key_is_rejected(tmp_path):
-    """题面：「同一个 `key` 出现两次、某一行不是 JSON 对象、键集合不对，或者 `points` 与本次设计的波长/角度网格对不上，都按缓存损坏处理」。"""
+    """同一个 `key` 出现两次、某一行不是 JSON 对象、键集合不对，或者 `points` 与本次设计的波长/角度网格对不上，都按缓存损坏处理。"""
     design = _design()
     first, spectrum_path, cache_path = _run(tmp_path, design, "cache-dup")
     line = cache_path.read_text(encoding="utf-8")
@@ -478,7 +478,7 @@ def test_duplicate_cache_key_is_rejected(tmp_path):
 
 
 def test_cache_grid_mismatch_is_rejected(tmp_path):
-    """题面：「`points` 与本次设计的波长/角度网格对不上」。"""
+    """`points` 与本次设计的波长/角度网格对不上。"""
     design = _design(wavelengths_nm=[450.0, 550.0], angles_deg=[0.0])
     first, spectrum_path, cache_path = _run(tmp_path, design, "cache-grid")
     record = _cache_lines(cache_path)[0]
@@ -490,9 +490,9 @@ def test_cache_grid_mismatch_is_rejected(tmp_path):
     assert second.stderr.startswith("运行拒收: BAD_CACHE")
 
 
-@pytest.mark.parametrize("design,case_id", _bad_designs())
-def test_invalid_design_is_rejected(tmp_path, design, case_id):
-    """题面：「前面的输入规则有一条不满足时，往标准错误打一行以 `运行拒收: BAD_DESIGN` 开头的话，退出码 2」。"""
+@pytest.mark.parametrize("design,case_id,case_no", _bad_designs())
+def test_invalid_design_is_rejected(tmp_path, design, case_id, case_no):
+    """前面的输入规则有一条不满足时，往标准错误打一行以 `运行拒收: BAD_DESIGN` 开头的话，退出码 2。"""
     labels = {
         "MISSING-TOP": "顶层键缺失",
         "EXTRA-TOP": "顶层键多出",
@@ -520,7 +520,7 @@ def test_invalid_design_is_rejected(tmp_path, design, case_id):
         "LAYER-TYPE": "膜层容器类型错误",
     }
     print("CASE %s %s" % (case_id, labels[case_id]))
-    finished, spectrum_path, cache_path = _run(tmp_path, design, "bad-%s" % case_id)
+    finished, spectrum_path, cache_path = _run(tmp_path, design, "case-%02d" % case_no)
     assert finished.returncode == 2
     assert finished.stderr.startswith("运行拒收: BAD_DESIGN")
     assert not spectrum_path.exists()
@@ -528,7 +528,7 @@ def test_invalid_design_is_rejected(tmp_path, design, case_id):
 
 
 def test_duplicate_json_key_is_rejected(tmp_path):
-    """题面：「设计文件结构不对、字段缺失或多出、数值越界、波长或角度不递增，都往标准错误打一行以 `运行拒收: BAD_DESIGN` 开头的话，退出码 2」。"""
+    """设计文件结构不对、字段缺失或多出、数值越界、波长或角度不递增，都往标准错误打一行以 `运行拒收: BAD_DESIGN` 开头的话，退出码 2。"""
     raw = '{"design_id":"D","design_id":"E","incident_n":1.0,"substrate_n":1.5,"layers":[],"wavelengths_nm":[550.0],"angles_deg":[0.0]}'
     design_path = tmp_path / "duplicate.json"
     design_path.write_text(raw, encoding="utf-8")
@@ -547,7 +547,7 @@ def test_duplicate_json_key_is_rejected(tmp_path):
 
 
 def test_minimum_design_boundaries_are_accepted(tmp_path):
-    """题面：「`layers` 是 0 到 20 层」「`wavelengths_nm` 有 1 到 12 个」「`angles_deg` 有 1 到 6 个」。"""
+    """`layers`、`wavelengths_nm`、`angles_deg` 的数量下限应被接受。"""
     design = _design(layers=[], wavelengths_nm=[300.0], angles_deg=[0.0])
     finished, spectrum_path, cache_path = _run(tmp_path, design, "min-bound")
     report = _report(spectrum_path)
@@ -557,7 +557,7 @@ def test_minimum_design_boundaries_are_accepted(tmp_path):
 
 
 def test_maximum_design_boundaries_are_accepted(tmp_path):
-    """题面：「`layers` 是 0 到 20 层」「`wavelengths_nm` 有 1 到 12 个」「`angles_deg` 有 1 到 6 个」。"""
+    """`layers`、`wavelengths_nm`、`angles_deg` 的数量上限应被接受。"""
     layers = [{"n": 2.0, "thickness_nm": 100.0} for _ in range(20)]
     wavelengths = [300.0 + 80.0 * index for index in range(12)]
     angles = [0.0, 15.0, 30.0, 45.0, 60.0, 85.0]
@@ -569,7 +569,7 @@ def test_maximum_design_boundaries_are_accepted(tmp_path):
 
 
 def test_wrong_argument_count_writes_usage_to_stderr(tmp_path):
-    """题面：「参数数目不对时，标准错误上留一行以 `用法: ` 开头的话，退出码 2」。"""
+    """参数数目不对时，标准错误上留一行以 `用法: ` 开头的话，退出码 2。"""
     design_path = tmp_path / "args.json"
     design_path.write_text(json.dumps(_design()), encoding="utf-8")
     finished = subprocess.run(
@@ -598,7 +598,7 @@ def test_wrong_argument_count_writes_usage_to_stderr(tmp_path):
 
 
 def test_spectrum_target_directory_is_rejected_without_touching_cache(tmp_path):
-    """题面：「目标是个目录时，写 `运行拒收: IO_FAILURE`，两个目标文件都保持调用前的字节」。"""
+    """目标是个目录时，写 `运行拒收: IO_FAILURE`，两个目标文件都保持调用前的字节。"""
     design = _design()
     cache_path = tmp_path / "io-cache.jsonl"
     cache_path.write_bytes(b"")
