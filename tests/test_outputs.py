@@ -227,7 +227,7 @@ def _bad_designs():
 
 
 def test_normal_incidence_bare_substrate_reflectance_matches_fresnel(tmp_path):
-    """正入射裸基底的反射率应回到 Fresnel 结果。"""
+    """正入射裸基底的反射率应回到 Fresnel 结果；题面：「分光计会在正入射、斜入射、单层、多层和两种偏振上分别核对」。"""
     design = _design(substrate_n=1.52)
     finished, spectrum_path, _ = _run(tmp_path, design, "normal-bare")
     item = _point(_report(spectrum_path), 550.0, 0.0)
@@ -238,7 +238,7 @@ def test_normal_incidence_bare_substrate_reflectance_matches_fresnel(tmp_path):
 
 
 def test_oblique_bare_substrate_matches_fresnel_for_both_polarizations(tmp_path):
-    """六十度裸基底的 s/p 反射率应分别对上 Fresnel 结果。"""
+    """六十度裸基底的 s/p 反射率应分别对上 Fresnel 结果；题面：「s 偏振和 p 偏振要分开算」。"""
     design = _design(substrate_n=1.52, angles_deg=[60.0])
     finished, spectrum_path, _ = _run(tmp_path, design, "oblique-bare")
     item = _point(_report(spectrum_path), 550.0, 60.0)
@@ -252,7 +252,7 @@ def test_oblique_bare_substrate_matches_fresnel_for_both_polarizations(tmp_path)
 
 
 def test_oblique_single_layer_matches_independent_airy_sum(tmp_path):
-    """斜入射时膜层里的相位厚度跟着折射角走，不能拿入射角代替。"""
+    """题面：「斜入射时膜层里的相位厚度跟着折射角走」，不能拿入射角代替。"""
     design = _design(
         substrate_n=1.52,
         layers=[{"n": 2.1, "thickness_nm": 95.0}],
@@ -269,7 +269,7 @@ def test_oblique_single_layer_matches_independent_airy_sum(tmp_path):
 
 
 def test_quarter_wave_single_layer_at_normal_incidence(tmp_path):
-    """正入射单层样品的反射率应与原有解析结果一致。"""
+    """正入射单层样品的反射率应与原有解析结果一致；题面：「分光计会在正入射、斜入射、单层、多层和两种偏振上分别核对」。"""
     wavelength = 550.0
     design = _design(
         substrate_n=1.5,
@@ -285,7 +285,7 @@ def test_quarter_wave_single_layer_at_normal_incidence(tmp_path):
 
 
 def test_quarter_wave_stack_matches_equivalent_admittance(tmp_path):
-    """四周期四分之一波长堆在中心波长处应等于等效导纳的解析反射率。"""
+    """四周期四分之一波长堆在中心波长处应等于等效导纳的解析反射率；题面：「叠了多层以后，数值和分光计对不上」。"""
     wavelength = 550.0
     periods = 4
     design = _design(
@@ -303,7 +303,7 @@ def test_quarter_wave_stack_matches_equivalent_admittance(tmp_path):
 
 
 def test_brewster_angle_suppresses_p_reflection(tmp_path):
-    """裸基底在 Brewster 角上 p 偏振反射应趋近于零。"""
+    """裸基底在 Brewster 角上 p 偏振反射应趋近于零；题面：「s 偏振和 p 偏振要分开算」。"""
     substrate = 1.52
     angle = math.degrees(math.atan(substrate / 1.0))
     design = _design(substrate_n=substrate, angles_deg=[angle])
@@ -315,7 +315,7 @@ def test_brewster_angle_suppresses_p_reflection(tmp_path):
 
 
 def test_s_and_p_polarizations_differ_at_oblique_single_layer(tmp_path):
-    """同一个斜入射点不能把 s/p 两种偏振算成同一个数。"""
+    """同一个斜入射点不能把 s/p 两种偏振算成同一个数；题面：「s 偏振和 p 偏振要分开算」。"""
     design = _design(
         substrate_n=1.52,
         layers=[{"n": 2.1, "thickness_nm": 95.0}],
@@ -329,7 +329,7 @@ def test_s_and_p_polarizations_differ_at_oblique_single_layer(tmp_path):
 
 
 def test_lossless_energy_conservation_for_every_point(tmp_path):
-    """膜层各向同性、没有吸收，所以每个点的反射率和透射率加起来是一。"""
+    """题面：「所以每个点的反射率和透射率加起来是一」，逐点核对能量守恒。"""
     design = _design(
         substrate_n=1.52,
         layers=[
@@ -352,7 +352,7 @@ def test_lossless_energy_conservation_for_every_point(tmp_path):
 
 
 def test_tilted_multilayer_p_polarization_matches_independent_stack_sum(tmp_path):
-    """倾斜多层膜的 p 偏振反射率应独立复算一致。"""
+    """倾斜多层膜的 p 偏振反射率应独立复算一致；题面：「斜着测、偏振分开看、叠了多层以后，数值和分光计对不上」。"""
     design = _design(
         substrate_n=1.52,
         layers=[
@@ -392,7 +392,7 @@ def test_output_schema_and_point_order(tmp_path):
 
 
 def test_output_is_compact_json_with_one_trailing_newline(tmp_path):
-    """光谱单是 UTF-8 紧凑 JSON，分隔符后不留空格，末尾一个换行。"""
+    """题面：「光谱单是 UTF-8 紧凑 JSON，分隔符后不留空格，末尾一个换行」。"""
     finished, spectrum_path, _ = _run(tmp_path, _design(), "compact")
     raw = spectrum_path.read_bytes()
     assert finished.returncode == 0
@@ -420,7 +420,7 @@ def test_summary_extrema_match_reported_points(tmp_path):
 
 
 def test_cache_first_run_misses_and_second_run_hits_without_appending(tmp_path):
-    """第二次应该直接认出来：`cache` 写 `"hit"`。"""
+    """重复送检应命中缓存；题面：「点集和上一遍逐值相同，缓存行数不增加」。"""
     design = _design()
     first, spectrum_path, cache_path = _run(tmp_path, design, "cache-once")
     first_points = _report(spectrum_path)["points"]
@@ -435,7 +435,7 @@ def test_cache_first_run_misses_and_second_run_hits_without_appending(tmp_path):
 
 
 def test_changed_thickness_with_same_design_id_is_a_cache_miss(tmp_path):
-    """设计里任何一个字段变了，`key` 都要跟着变。"""
+    """题面：「设计里任何一个字段变了」，缓存键必须跟着变而不能套用旧点集。"""
     original = _design(design_id="FL-552-07", layers=[{"n": 2.1, "thickness_nm": 95.0}])
     changed = _design(design_id="FL-552-07", layers=[{"n": 2.1, "thickness_nm": 130.0}])
     first, spectrum_path, cache_path = _run(tmp_path, original, "cache-change")
@@ -569,7 +569,7 @@ def test_maximum_design_boundaries_are_accepted(tmp_path):
 
 
 def test_wrong_argument_count_writes_usage_to_stderr(tmp_path):
-    """参数数目不对时，标准错误上留一行以 `用法: ` 开头的话，退出码 2。"""
+    """题面：「参数数目不对时」，标准错误上留一行以 `用法: ` 开头的话，退出码 2。"""
     design_path = tmp_path / "args.json"
     design_path.write_text(json.dumps(_design()), encoding="utf-8")
     finished = subprocess.run(
